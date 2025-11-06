@@ -10,6 +10,9 @@ on:
         description: "URL to payload"
         required: true
 
+permissions:
+  id-token: write
+
 jobs:
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
