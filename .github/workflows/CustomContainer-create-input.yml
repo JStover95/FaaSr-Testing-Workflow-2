@@ -52,12 +52,11 @@ jobs:
   run_docker_image:
     needs: login-to-amazon-ecr
     runs-on: ubuntu-latest
-    services:
-      container:
-        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/faasr/test-python:latest
-        credentials:
-          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
-          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+    container:
+      image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/faasr/test-python:latest
+      credentials:
+        username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+        password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
 
     env:
       GH_PAT: ${{ secrets.GH_PAT}}
