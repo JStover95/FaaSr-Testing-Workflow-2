@@ -37,7 +37,7 @@ jobs:
     needs: login-to-amazon-ecr
     runs-on: ubuntu-latest
     container:
-      image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/faasr/test-python:latest
+      image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/faasr/test-r:latest
       credentials:
         username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
         password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
