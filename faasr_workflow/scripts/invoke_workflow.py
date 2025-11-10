@@ -96,8 +96,19 @@ def add_secrets_to_server_attributes(server, faas_type):
             server["SLURM_Token"] = slurm_token
 
 
-def main(testing: bool = False):
-    """Function invocation script"""
+def main(testing: bool = False) -> None | str:
+    """
+    Function invocation script
+
+    Args
+    ----
+        testing: Setting this to `True` triggers invocation timestamp and ID generation
+            before invocation.
+
+    Returns
+    -------
+        The invocation ID, if any.
+    """
 
     workflow_path = get_workflow_file()
 
@@ -117,6 +128,11 @@ def main(testing: bool = False):
     except Exception as e:
         logger.error(f"Exception raised while while initializing FaaSr payload: {e}")
         sys.exit(1)
+
+    # If testing, generate the invocation timestamp and ID to return to the runner
+    if testing:
+        workflow._generate_invocation_timestamp()
+        workflow._generate_invocation_id()
 
     workflow_name = workflow.get("WorkflowName")
 
@@ -138,7 +154,7 @@ def main(testing: bool = False):
         faas_type = server["FaaSType"]
 
         use_secret_store = server.get("UseSecretStore", False)
-    except KeyError as e:
+    except KeyError:
         sys.exit(1)
 
     if not use_secret_store:
@@ -158,8 +174,7 @@ def main(testing: bool = False):
         logger.error(f"Trigger failed: {e}")
         sys.exit(1)
 
-    print("--------------------------------")
-    print(workflow["InvocationID"])
+    return workflow.get("InvocationID")
 
 
 if __name__ == "__main__":
