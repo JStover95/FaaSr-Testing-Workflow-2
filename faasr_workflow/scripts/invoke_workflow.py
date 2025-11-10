@@ -100,14 +100,12 @@ def main(testing: bool = False) -> None | str:
     """
     Function invocation script
 
-    Args
-    ----
+    Args:
         testing: Setting this to `True` triggers invocation timestamp and ID generation
             before invocation.
 
-    Returns
-    -------
-        The invocation ID, if any.
+    Returns:
+        bool | None: The invocation ID, if any.
     """
 
     workflow_path = get_workflow_file()
