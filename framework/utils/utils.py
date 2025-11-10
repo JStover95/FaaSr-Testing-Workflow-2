@@ -1,4 +1,4 @@
-from scripts.utils.enums import FunctionStatus
+from framework.utils.enums import FunctionStatus
 
 
 def extract_function_name(function_name: str) -> str:
