@@ -96,7 +96,7 @@ def add_secrets_to_server_attributes(server, faas_type):
             server["SLURM_Token"] = slurm_token
 
 
-def main():
+def main(testing: bool = False):
     """Function invocation script"""
 
     workflow_path = get_workflow_file()
