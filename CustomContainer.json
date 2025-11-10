@@ -137,7 +137,7 @@
   "DataStores": {
     "S3": {
       "Endpoint": "https://s3.us-east-1.amazonaws.com",
-      "Bucket": "faasr-sample-functions",
+      "Bucket": "faasr-integration-tests",
       "Region": "us-east-1"
     }
   },
