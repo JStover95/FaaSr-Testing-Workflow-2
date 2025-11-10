@@ -172,7 +172,7 @@ def main(testing: bool = False) -> None | str:
         logger.error(f"Trigger failed: {e}")
         sys.exit(1)
 
-    return workflow.get("InvocationID")
+    return workflow
 
 
 if __name__ == "__main__":
