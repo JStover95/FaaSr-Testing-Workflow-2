@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripts.faasr_workflow import FaaSrWorkflow
-from scripts.utils.enums import FunctionStatus
+from framework.faasr_workflow import FaaSrWorkflow
+from framework.utils.enums import FunctionStatus
 
 load_dotenv()
 
