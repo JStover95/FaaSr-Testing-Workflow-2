@@ -4,12 +4,12 @@ import signal
 import sys
 import threading
 import time
-import uuid
 from collections import defaultdict
 from datetime import UTC, datetime
 from itertools import chain
-from typing import Any, Generator, Literal
+from typing import Generator, Literal
 
+from FaaSr_py import FaaSrPayload
 from FaaSr_py.helpers.graph_functions import build_adjacency_graph
 from FaaSr_py.helpers.s3_helper_functions import get_invocation_folder
 
@@ -30,10 +30,11 @@ from framework.utils import (
 from framework.utils.enums import FunctionStatus, InvocationStatus
 
 REQUIRED_ENV_VARS = [
-    "MY_S3_BUCKET_ACCESSKEY",
-    "MY_S3_BUCKET_SECRETKEY",
-    "GITHUB_TOKEN",
+    "S3_AccessKey",
+    "S3_SecretKey",
+    "GH_PAT",
     "GITHUB_REPOSITORY",
+    "GITHUB_REF_NAME",
 ]
 
 
@@ -58,14 +59,13 @@ class WorkflowRunner:
     def __init__(
         self,
         *,
-        workflow_file_path: str,
+        faasr_payload: FaaSrPayload,
         timeout: int,
         check_interval: int,
         stream_logs: bool = False,
     ):
-        super().__init__(workflow_file_path)
-
         self._validate_environment()
+        self._faasr_payload = faasr_payload
 
         # Setup logging
         self.timestamp = datetime.now(UTC).strftime("%Y-%m-%d_%H-%M-%S")
@@ -85,22 +85,22 @@ class WorkflowRunner:
         self._cleanup_timeout = 30  # seconds to wait for graceful shutdown
 
         # Build adjacency graph for monitoring
-        self.adj_graph, self.ranks = build_adjacency_graph(self.workflow_data)
+        self.adj_graph, self.ranks = build_adjacency_graph(self._faasr_payload)
         self.reverse_adj_graph = self._build_reverse_adjacency_graph()
 
         # Initialize function statuses
-        self.workflow_name = self.workflow_data.get("WorkflowName")
-        self.workflow_invoke = self.workflow_data.get("FunctionInvoke")
-        self.function_names = self.workflow_data["ActionList"].keys()
+        self.workflow_name = self._faasr_payload.get("WorkflowName")
+        self.workflow_invoke = self._faasr_payload.get("FunctionInvoke")
+        self.function_names = self._faasr_payload["ActionList"].keys()
         self._stream_logs = stream_logs
         self._functions: dict[str, FaaSrFunction] = {}
         self._prev_statuses: dict[str, FunctionStatus] = {}
 
         # Initialize S3 client for monitoring
         self.s3_client = FaaSrS3Client(
-            workflow_data=self.workflow_data,
-            access_key=os.getenv("MY_S3_BUCKET_ACCESSKEY"),
-            secret_key=os.getenv("MY_S3_BUCKET_SECRETKEY"),
+            workflow_data=self._faasr_payload,
+            access_key=os.getenv("S3_AccessKey"),
+            secret_key=os.getenv("S3_SecretKey"),
         )
 
         # Setup signal handlers for graceful shutdown
@@ -185,7 +185,7 @@ class WorkflowRunner:
             function = FaaSrFunction(
                 function_name=rank,
                 workflow_name=self.workflow_name,
-                invocation_folder=get_invocation_folder(self.faasr_payload),
+                invocation_folder=get_invocation_folder(self._faasr_payload),
                 s3_client=self.s3_client,
                 stream_logs=stream_logs,
             )
@@ -488,28 +488,30 @@ class WorkflowRunner:
 
         self.logger.info("Cleanup completed")
 
-    #############
-    # Overrides #
-    #############
-    def _create_faasr_payload_from_local_file(self) -> dict[str, Any]:
-        workflow = super()._create_faasr_payload_from_local_file()
+    @classmethod
+    def trigger_workflow(
+        cls,
+        timeout: int,
+        check_interval: int,
+        stream_logs: bool = False,
+    ) -> "WorkflowRunner":
+        faasr_payload = main(testing=True)
+        runner = cls(
+            faasr_payload=faasr_payload,
+            timeout=timeout,
+            check_interval=check_interval,
+            stream_logs=stream_logs,
+        )
+        runner._start()
+        return runner
 
-        # Set the InvocationID and InvocationTimestamp for monitoring
-        workflow["InvocationID"] = str(uuid.uuid4())
-        workflow["InvocationTimestamp"] = self.timestamp
-
-        return workflow
-
-    def trigger_workflow(self) -> None:
-        # super().trigger_workflow()
-        main()
-
+    def _start(self):
         # Build functions after trigger_workflow initializes FaaSrPayload
         self._functions = self._build_functions(self._stream_logs)
         self._prev_statuses = self.get_function_statuses()
 
         self.logger.info(
-            f"Workflow {self.workflow_name} triggered with InvocationID: {self.faasr_payload['InvocationID']}"
+            f"Workflow {self.workflow_name} triggered with InvocationID: {self._faasr_payload['InvocationID']}"
         )
 
         # Start monitoring in background thread
@@ -609,16 +611,13 @@ def _main():
     load_dotenv()
 
     # Initialize the workflow
-    runner = WorkflowRunner(
-        workflow_file_path=args.workflow_file,
+    print("🚀 Starting workflow...")
+    runner = WorkflowRunner.trigger_workflow(
         timeout=args.timeout,
         check_interval=args.check_interval,
         stream_logs=args.stream_logs,
     )
 
-    # Start the workflow (returns immediately)
-    print("🚀 Starting workflow...")
-    runner.trigger_workflow()
     print("✅ Workflow started, monitoring in background")
 
     # Monitor status changes
