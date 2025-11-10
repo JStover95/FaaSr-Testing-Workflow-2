@@ -13,8 +13,8 @@ from typing import Any, Generator, Literal
 from FaaSr_py.helpers.graph_functions import build_adjacency_graph
 from FaaSr_py.helpers.s3_helper_functions import get_invocation_folder
 
-from framework.faasr_function import FaaSrFunction
 from faasr_workflow.scripts.invoke_workflow import main
+from framework.faasr_function import FaaSrFunction
 from framework.s3_client import FaaSrS3Client
 from framework.utils import (
     completed,
@@ -38,22 +38,22 @@ REQUIRED_ENV_VARS = [
 
 
 class InitializationError(Exception):
-    """Exception raised for FaaSrWorkflow initialization errors"""
+    """Exception raised for WorkflowRunner initialization errors"""
 
     def __init__(self, message: str):
         self.message = message
         super().__init__(self.message)
 
     def __str__(self):
-        return f"Error initializing FaaSrWorkflow: {self.message}"
+        return f"Error initializing WorkflowRunner: {self.message}"
 
 
 class StopMonitoring(Exception):
-    """Exception raised to stop FaaSrWorkflow monitoring"""
+    """Exception raised to stop WorkflowRunner monitoring"""
 
 
-class FaaSrWorkflow:
-    logger_name = "FaaSrWorkflow"
+class WorkflowRunner:
+    logger_name = "WorkflowRunner"
 
     def __init__(
         self,
@@ -124,10 +124,10 @@ class FaaSrWorkflow:
 
     def _setup_logger(self) -> logging.Logger:
         """
-        Initialize the FaaSrWorkflow logger.
+        Initialize the WorkflowRunner logger.
 
         Returns:
-            logging.Logger: The logger for the FaaSrWorkflow.
+            logging.Logger: The logger for the WorkflowRunner.
         """
         logger = logging.getLogger(self.logger_name)
         handler = logging.StreamHandler()
@@ -594,7 +594,7 @@ class FaaSrWorkflow:
 
 
 def _main():
-    """Example of using the thread-safe FaaSrWorkflow"""
+    """Example of using the thread-safe WorkflowRunner"""
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -609,7 +609,7 @@ def _main():
     load_dotenv()
 
     # Initialize the workflow
-    workflow = FaaSrWorkflow(
+    runner = WorkflowRunner(
         workflow_file_path=args.workflow_file,
         timeout=args.timeout,
         check_interval=args.check_interval,
@@ -618,16 +618,16 @@ def _main():
 
     # Start the workflow (returns immediately)
     print("🚀 Starting workflow...")
-    workflow.trigger_workflow()
+    runner.trigger_workflow()
     print("✅ Workflow started, monitoring in background")
 
     # Monitor status changes
     print("\n📊 Monitoring function statuses...")
-    previous_statuses = {k: None for k in workflow.get_function_statuses()}
+    previous_statuses = {k: None for k in runner.get_function_statuses()}
 
-    while not workflow.monitoring_complete:
+    while not runner.monitoring_complete:
         # Get current statuses (thread-safe)
-        current_statuses = workflow.get_function_statuses()
+        current_statuses = runner.get_function_statuses()
 
         # Check for changes
         for function_name, status in current_statuses.items():
@@ -656,7 +656,7 @@ def _main():
         time.sleep(1)
 
     # Get final results
-    final_statuses = workflow.get_function_statuses()
+    final_statuses = runner.get_function_statuses()
     print("\n🏁 Final Results:")
     for function_name, status in final_statuses.items():
         print(f"  {function_name}: {status.value}")

@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from framework.faasr_workflow import FaaSrWorkflow
 from framework.utils.enums import FunctionStatus
+from framework.workflow_runner import WorkflowRunner
 
 load_dotenv()
 
@@ -17,7 +17,7 @@ CHECK_INTERVAL = 1
 
 class WorkflowTester:
     def __init__(self, workflow_file_path: str):
-        self.runner = FaaSrWorkflow(
+        self.runner = WorkflowRunner(
             workflow_file_path=workflow_file_path,
             timeout=TIMEOUT,
             check_interval=CHECK_INTERVAL,
