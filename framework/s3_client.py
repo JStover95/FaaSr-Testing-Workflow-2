@@ -35,7 +35,7 @@ class FaaSrS3Client:
         secret_key: str,
     ):
         try:
-            default_datastore = workflow_data.get("DefaultDataStore", "My_S3_Bucket")
+            default_datastore = workflow_data.get("DefaultDataStore", "S3")
             datastore_config = workflow_data["DataStores"][default_datastore]
 
             if datastore_config.get("Endpoint"):
